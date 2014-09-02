@@ -20,7 +20,7 @@ define(function (require) {
 
   // options.start = 0
   // options.stop = Date.now()
-  window.filter = function filter(min, max) {
+  window.filter = function filter(min, max, geometry) {
     exports.updateCDBMap({
       type: 'daterange',
       data: {
@@ -30,7 +30,8 @@ define(function (require) {
     });
     window.printCounts({
       start: min || 0,
-      stop: max || Date.now()
+      stop: max || Date.now(),
+      geometry: geometry
     });
   };
 
@@ -138,10 +139,21 @@ define(function (require) {
     }
 
     return new Promise(function (resolve, reject) {
-      exports.sql.execute('SELECT date_trunc(\'day\', ts) AS d, COUNT(*) FROM fourweeks WHERE ts > timestamp \'{{start}}\' AND ts <= timestamp \'{{stop}}\' GROUP BY d ORDER BY d', {
-        start: start,
-        stop: stop
-      }).done(resolve)
+      var promise;
+      if (options.geometry) {
+        promise = exports.sql.execute('SELECT date_trunc(\'day\', ts) AS d, COUNT(*) FROM fourweeks WHERE ts > timestamp \'{{start}}\' AND ts <= timestamp \'{{stop}}\' AND ST_Intersects(the_geom, ST_SetSRID(ST_GeomFromGeoJSON(\'' + JSON.stringify(options.geometry) + '}}\'), 4326)) GROUP BY d ORDER BY d', {
+          start: start,
+          stop: stop,
+          geometry: options.geometry
+        });
+      } else {
+        promise = exports.sql.execute('SELECT date_trunc(\'day\', ts) AS d, COUNT(*) FROM fourweeks WHERE ts > timestamp \'{{start}}\' AND ts <= timestamp \'{{stop}}\' GROUP BY d ORDER BY d', {
+          start: start,
+          stop: stop
+        });
+      }
+
+      promise.done(resolve)
       .error(reject);
     });
   };
