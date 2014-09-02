@@ -1,6 +1,7 @@
 require.config({
   paths: {
-    'leaflet': 'leaflet/leaflet-src'
+    'leaflet': 'leaflet/leaflet-src',
+    'cartodb': '//libs.cartocdn.com/cartodb.js/v3/cartodb'
   },
   shim: {
     'leaflet': {
